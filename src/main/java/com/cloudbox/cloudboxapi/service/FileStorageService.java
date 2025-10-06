@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -76,5 +77,23 @@ public class FileStorageService {
 
     public List<FileMetadata> loadAll() {
         return fileMetadataRepository.findAll();
+    }
+
+    public void delete(Long id) {
+        // Look for metadata in the database
+        FileMetadata metadata = fileMetadataRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("File not found with id: " + id));
+
+        // Generate delete request
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(this.bucketName)
+                .key(metadata.getS3Key())
+                .build();
+
+        // Delete file from S3
+        s3Client.deleteObject(deleteObjectRequest);
+
+        // Delete metadata from database
+        fileMetadataRepository.deleteById(id);
     }
 }

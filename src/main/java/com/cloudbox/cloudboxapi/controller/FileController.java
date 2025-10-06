@@ -47,4 +47,18 @@ public class FileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(file);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteFile(@PathVariable Long id) {
+        try {
+            storageService.delete(id);
+            String message = "Successfully deleted the file with id: " + id;
+            return ResponseEntity.status(HttpStatus.OK).body(message);
+        } catch (Exception e) {
+            String message = "Could not delete file with id: " + id + ". Error "
+                     +  e.getMessage();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+        }
+
+    }
 }
