@@ -2,7 +2,6 @@ package com.cloudbox.cloudboxapi.controller;
 
 import com.cloudbox.cloudboxapi.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
