@@ -1,0 +1,18 @@
+# AWS Credentials and Configuration
+aws.accessKeyId=<YOUR_ACCESS_KEY_ID_HERE>
+aws.secretKey=<YOUR_SECRET_KEY_HERE>
+aws.region=<YOUR_AWS_REGION_HERE>
+aws.s3.bucketName=<YOUR_S3_BUCKET_NAME_HERE>
+
+# H2 Database Configuration
+spring.h2.console.enabled=true
+spring.datasource.url=jdbc:h2:mem:filedb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=password
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=update
+
+# Set max file sizes
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
