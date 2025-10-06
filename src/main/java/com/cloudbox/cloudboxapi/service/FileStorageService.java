@@ -1,5 +1,7 @@
 package com.cloudbox.cloudboxapi.service;
 
+import com.cloudbox.cloudboxapi.model.FileMetadata;
+import com.cloudbox.cloudboxapi.repository.FileMetadataRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -13,25 +15,26 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class FileStorageService {
 
     private final S3Client s3Client;
     private final String bucketName;
+    private final FileMetadataRepository fileMetadataRepository;
 
     public FileStorageService(@Value("${aws.accessKeyId}") String accessKey,
                               @Value("${aws.secretKey}") String secretKey,
                               @Value("${aws.region}") String region,
-                              @Value("${aws.s3.bucketName}") String bucketName) {
+                              @Value("${aws.s3.bucketName}") String bucketName,
+                              FileMetadataRepository fileMetadataRepository) {
         this.bucketName = bucketName;
+        this.fileMetadataRepository = fileMetadataRepository;
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
         this.s3Client = S3Client.builder()
                 .region(Region.of(region))
@@ -41,11 +44,22 @@ public class FileStorageService {
 
     public void store(MultipartFile file) {
         try {
+            // Upload file to S3
+            String fileName = file.getOriginalFilename();
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(this.bucketName)
-                    .key(file.getOriginalFilename())
+                    .key(fileName)
                     .build();
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            // Save metadata to database
+            FileMetadata metadata = new FileMetadata();
+            metadata.setFileName(fileName);
+            metadata.setS3Key(fileName);
+            metadata.setFileSize(file.getSize());
+            metadata.setUploadTimestamp(LocalDateTime.now());
+            fileMetadataRepository.save(metadata);
+
         } catch (IOException e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
@@ -60,14 +74,7 @@ public class FileStorageService {
         return new InputStreamResource(s3object);
     }
 
-    public List<String> loadAll() {
-        ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request.builder()
-                .bucket(this.bucketName)
-                .build();
-        ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(listObjectsV2Request);
-        return response.stream()
-                .flatMap(page -> page.contents().stream())
-                .map(s3Object -> s3Object.key())
-                .collect(Collectors.toList());
+    public List<FileMetadata> loadAll() {
+        return fileMetadataRepository.findAll();
     }
 }

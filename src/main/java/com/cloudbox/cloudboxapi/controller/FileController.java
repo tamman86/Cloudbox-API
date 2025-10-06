@@ -1,5 +1,6 @@
 package com.cloudbox.cloudboxapi.controller;
 
+import com.cloudbox.cloudboxapi.model.FileMetadata;
 import com.cloudbox.cloudboxapi.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -34,8 +35,8 @@ public class FileController {
     }
 
     @GetMapping
-    public ResponseEntity<List<String>> getListFiles() {
-        List<String> fileInfos = storageService.loadAll();
+    public ResponseEntity<List<FileMetadata>> getListFiles() {
+        List<FileMetadata> fileInfos = storageService.loadAll();
         return ResponseEntity.status(HttpStatus.OK).body(fileInfos);
     }
 
