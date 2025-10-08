@@ -4,6 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('register-password');
     const authError = document.getElementById('auth-error');
 
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast ${type}';
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000)
+    }
+
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         authError.textContent = ''; // Clear previous errors
@@ -21,14 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                // On successful registration, redirect to the login page
-                window.location.href = '/index.html';
+                showToast('Registration successful! Redirecting to login...');
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 1500);
             } else {
                 const errorText = await response.text();
-                authError.textContent = `Registration failed: ${errorText}`;
+                showToast(`Registration failed: ${errorText}`, 'error');
             }
         } catch (error) {
-            authError.textContent = 'An error occurred. Please try again.';
+            showToast('An error occurred. Please try again.', 'error');
             console.error('Registration error:', error);
         }
     });

@@ -84,6 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
     // --- Event Handlers ---
     async function handleLogin(e) {
         e.preventDefault();
@@ -99,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loginForm.reset();
             showMainView();
         } catch (error) {
-            authError.textContent = 'Login failed. Please check your credentials.';
+            showToast('Login failed. Please check your credentials.', 'error');
             console.error('Login error:', error);
         }
     }
@@ -152,15 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (xhr.status === 200) {
                 uploadForm.reset();
                 fetchAndRenderFiles();
+                showToast('File uploaded successfully!');
             } else {
-                alert(`Upload failed: ${xhr.responseText}`);
+                showToast(`Upload failed: ${xhr.responseText}`, 'error');
             }
         });
 
         // Listen for errors
         xhr.addEventListener('error', () => {
             progressBarContainer.style.display = 'none';
-            alert('An error occurred during the upload. Please try again.');
+            showToast('An error occurred during the upload.', 'error');
         });
 
         // Configure and send the request
@@ -174,14 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleDelete(e) {
         if (e.target.classList.contains('delete-btn')) {
             const fileId = e.target.dataset.id;
-            if (confirm('Are you sure you want to delete this file?')) {
-                try {
-                    await apiRequest(`/files/${fileId}`, 'DELETE', null, state.token);
-                    fetchAndRenderFiles();
-                } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('Failed to delete file.');
-                }
+            try {
+                await apiRequest(`/files/${fileId}`, 'DELETE', null, state.token);
+                fetchAndRenderFiles();
+                showToast('File deleted successfully.');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete file.', 'error');
             }
         }
     }

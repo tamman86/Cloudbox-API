@@ -1,10 +1,13 @@
 package com.cloudbox.cloudboxapi.service;
 
 import com.cloudbox.cloudboxapi.model.FileMetadata;
+import com.cloudbox.cloudboxapi.model.User;
 import com.cloudbox.cloudboxapi.repository.FileMetadataRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -43,7 +46,16 @@ public class FileStorageService {
                 .build();
     }
 
+    private User getCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof User) {
+            return (User) principal;
+        }
+        throw new IllegalStateException("Could not determine the current user.");
+    }
+
     public void store(MultipartFile file) {
+        User currentUser = getCurrentUser();
         try {
             // Upload file to S3
             String fileName = file.getOriginalFilename();
@@ -59,6 +71,7 @@ public class FileStorageService {
             metadata.setS3Key(fileName);
             metadata.setFileSize(file.getSize());
             metadata.setUploadTimestamp(LocalDateTime.now());
+            metadata.setUser(currentUser);
             fileMetadataRepository.save(metadata);
 
         } catch (IOException e) {
@@ -67,22 +80,36 @@ public class FileStorageService {
     }
 
     public Resource load(String filename) {
+        User currentUser = getCurrentUser();
+        FileMetadata metadata = fileMetadataRepository.findByUser(currentUser).stream()
+                .filter(m -> m.getFileName().equals(filename))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("File not found or you don't have permission: " + filename));
+
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(this.bucketName)
-                .key(filename)
+                .key(metadata.getS3Key())
                 .build();
         ResponseInputStream<GetObjectResponse> s3object = s3Client.getObject(getObjectRequest);
         return new InputStreamResource(s3object);
     }
 
     public List<FileMetadata> loadAll() {
-        return fileMetadataRepository.findAll();
+        User currentUser = getCurrentUser();
+        // Get files for the current user only
+        return fileMetadataRepository.findByUser(currentUser);
     }
 
     public void delete(Long id) {
+        User currentUser = getCurrentUser();
         // Look for metadata in the database
         FileMetadata metadata = fileMetadataRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("File not found with id: " + id));
+
+        // Check the file belongs to the current user
+        if (!metadata.getUser().getId().equals(currentUser.getId())) {
+            throw new SecurityException("User does not have permission to delete this file.");
+        }
 
         // Generate delete request
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()

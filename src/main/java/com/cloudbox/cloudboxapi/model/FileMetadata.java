@@ -1,5 +1,6 @@
 package com.cloudbox.cloudboxapi.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,6 +20,11 @@ public class FileMetadata {
     private long fileSize;
 
     private LocalDateTime uploadTimestamp;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
 
     public FileMetadata() {
     }
@@ -61,5 +67,13 @@ public class FileMetadata {
 
     public void setUploadTimestamp(LocalDateTime uploadTimestamp) {
         this.uploadTimestamp = uploadTimestamp;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

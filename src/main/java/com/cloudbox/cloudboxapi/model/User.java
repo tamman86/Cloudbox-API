@@ -3,9 +3,9 @@ package com.cloudbox.cloudboxapi.model;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -20,6 +20,9 @@ public class User implements UserDetails{
 
     @Column(nullable = false)
     private String password;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FileMetadata> files;
 
     // User Details
 
@@ -71,5 +74,13 @@ public class User implements UserDetails{
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<FileMetadata> getFiles() {
+        return files;
+    }
+
+    public void setFiles(List<FileMetadata> files) {
+        this.files = files;
     }
 }
